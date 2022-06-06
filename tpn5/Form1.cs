@@ -18,79 +18,96 @@ namespace TPN5
         public Form1()
         {
             InitializeComponent();
-            Solucion.CreacionDeProductos();
-            dwvGrilla.DataSource = Solucion.ObtenerProductos();
+            Repositorio.Repositorio.CreacionDeProductos();
+            dwvGrilla.DataSource = Repositorio.Repositorio.ObtenerProductos();
             AgregarEstadoDelProducto();
-        }
-
-        private void EnlazarControles(Producto producto)
-        {
-            txtDescripcion.Text = producto.Descripcion;
-            txtExistencia.Text = producto.Existencia.ToString();
-            cbEstado.SelectedIndex = 0;
-            cbEstado.Enabled = false;
-
-            //BindingSource bsProducto = new BindingSource();
-            //txtDescripcion.DataBindings.Add("text", bsProducto, producto.Descripcion);
-            ////txtDescripcion.DataBindings.Add("text", bsProducto, producto.Existencia.ToString());
-            //txtDescripcion.DataBindings.Add("text", bsProducto, producto.CSI.ToString());
-            //txtDescripcion.DataBindings.Add("text", bsProducto, producto.PI.ToString());
-            //txtDescripcion.DataBindings.Add("text", bsProducto, producto.estadoProducto.ToString());
-            ////bsProducto.DataSource = producto;
+            panel2.Enabled = false;
         }
 
         private void btnBuscarProducto_Click(object sender, EventArgs e)
         {
             panel1.Visible = true;
             var codigoLectura = txtCodigo.Text;
-            var producto = Solucion.BuscarProducto(int.Parse(codigoLectura));
+            var producto = Repositorio.Repositorio.BuscarProducto(int.Parse(codigoLectura));
+           
             if (producto == null)
             {
+                
                 var resultado = MessageBox.Show("El producto no existe. Desea crear un nuevo producto?", "Mensaje de Existencia", MessageBoxButtons.YesNo);
                 if (DialogResult.Yes == resultado)
                 {
                     MessageBox.Show("continuar con la carga del producto");
+                    textCodigo.Text = txtCodigo.Text;
+                    cbEstado.Enabled = false;
                 }
                 else
                 {
                     MessageBox.Show("Ingresa un nuevo codigo de producto");
-                    txtCodigo.Text = "";
+                    textCodigo.Text = "";
+                    cbEstado.Enabled = false;
                 }
+                panel2.Enabled = true;
                 return;
             }
-            EnlazarControles(producto);
+            else
+            {
+                var listProducto = new List<Producto>();
+                listProducto.Add(producto);
+
+                dwvGrilla.DataSource = null;
+                dwvGrilla.DataSource = listProducto;
+
+            }
+
             btnCalcularPVoMG.Enabled = false;
         }
 
         private void btnCalcularCCI_Click(object sender, EventArgs e)
         {
-            var producto = Solucion.BuscarProducto(int.Parse(txtCodigo.Text));
-            producto.CostoSinIva = float.Parse(txtCSI.Text);
-            producto.PorcentajeDeIVA = float.Parse(txtPI.Text);
-            var resultadoCCI = producto.CalcularCostoConIva();
+            var producto = Repositorio.Repositorio.BuscarProducto(int.Parse(textCodigo.Text));
+            Double resultadoCCI = 0;
+
+            if (producto == null)
+            {
+                var producto_new = new Producto();
+                producto_new.Codigo = int.Parse(textCodigo.Text);
+                producto_new.Descripcion = txtDescripcion.Text;
+                producto_new.estadoProducto = (EstadoProducto)cbEstado.SelectedItem;
+                producto_new.Existencia = int.Parse(txtExistencia.Text);
+                producto_new.CostoSinIva = Double.Parse(txtCSI.Text);
+                producto_new.PorcentajeDeIVA = Double.Parse(txtPI.Text);
+                resultadoCCI = producto_new.CalcularCostoConIva();
+                Repositorio.Repositorio.AgregarProducto(producto_new);
+            }
+            else
+            {
+                producto.CostoSinIva = Double.Parse(txtCSI.Text);
+                producto.PorcentajeDeIVA = Double.Parse(txtPI.Text);
+                resultadoCCI = producto.CalcularCostoConIva();
+            }
             txtCCI.Text = resultadoCCI.ToString();
             btnCalcularPVoMG.Enabled = true;
         }
 
         private void btnCalcularPVoMG_Click(object sender, EventArgs e)
         {
-            var producto = Solucion.BuscarProducto(int.Parse(txtCodigo.Text));
-            producto.CostoSinIva = float.Parse(txtCSI.Text);
-            producto.PorcentajeDeIVA = float.Parse(txtPI.Text);
-            
-            
-            var cci = txtCCI.Text;
-            float resultado = 0;
-            if (txtPF.Text == "")
+            var producto = Repositorio.Repositorio.BuscarProducto(int.Parse(textCodigo.Text));
+            producto.CostoSinIva = Double.Parse(txtCSI.Text);
+            producto.PorcentajeDeIVA = Double.Parse(txtPI.Text);
+
+            producto.CostoConIVA = Double.Parse(txtCCI.Text);
+
+            double resultado = 0;
+            if (txtPV.Text == "")
             {
-                producto.margenDeGanancia = float.Parse(txtMG.Text);
+                producto.margenDeGanancia = Double.Parse(txtMG.Text);
                 resultado = producto.CalcularPrecioFinalDeVenta();
-                txtPF.Text = resultado.ToString();
+                txtPV.Text = resultado.ToString();
             }
             else
             {
-                producto.precioFinalDeVenta = float.Parse(txtPF.Text);
-                resultado = 35;
+                producto.precioFinalDeVenta = Double.Parse(txtPV.Text);
+                resultado = producto.CalcularMargenDeGanancia();
                 txtMG.Text = resultado.ToString();
             }
         }
@@ -105,73 +122,60 @@ namespace TPN5
 
         private void btGuardar_Click(object sender, EventArgs e)
         {
-            var producto = Solucion.BuscarProducto(int.Parse(txtCodigo.Text));
+            var producto = Repositorio.Repositorio.BuscarProducto(int.Parse(textCodigo.Text));
 
-            producto.Codigo = int.Parse(txtCodigo.Text);
-            producto.Descripcion = txtDescripcion.Text;
-            producto.Existencia = int.Parse(txtExistencia.Text);
-            producto.CostoSinIva = float.Parse(txtCCI.Text);
-            producto.PorcentajeDeIVA = float.Parse(txtPI.Text);
-            producto.estadoProducto = (EstadoProducto)cbEstado.SelectedIndex;
-            producto.precioFinalDeVenta = float.Parse(txtPF.Text);
+            if (textCodigo.Text == "" || txtDescripcion.Text == "" || txtExistencia.Text == ""
+               && txtCCI.Text == "" || txtPI.Text == "" || txtMG.Text == "" || txtPV.Text == "")
+            {
+                MessageBox.Show("Debe completar todos los campos para la edicion");
+            }
+            else
+            {
+                producto.Codigo = int.Parse(textCodigo.Text);
+                producto.Descripcion = txtDescripcion.Text;
+                producto.Existencia = int.Parse(txtExistencia.Text);
+                producto.CostoSinIva = Double.Parse(txtCCI.Text);
+                producto.PorcentajeDeIVA = Double.Parse(txtPI.Text);
+                producto.estadoProducto = (EstadoProducto)cbEstado.SelectedIndex;
+                producto.precioFinalDeVenta = Double.Parse(txtPV.Text);
 
-            //Solucion.AgregarProducto(producto);
+                dwvGrilla.DataSource = null;
+                dwvGrilla.DataSource = Repositorio.Repositorio.ObtenerProductos();
 
-            dwvGrilla.DataSource = null;
-            dwvGrilla.DataSource = Solucion.ObtenerProductos();
+                MessageBox.Show("se guardo con exito");
+            }
+        }
 
-            txtCodigo.Text = "";
+        private void btnEditar_Click_1(object sender, EventArgs e)
+        {
+            panel2.Enabled = true;
+            cbEstado.Enabled = true;
+            var producto = Repositorio.Repositorio.BuscarProducto(int.Parse(txtCodigo.Text));
+
+            textCodigo.Text = producto.Codigo.ToString();
+            txtDescripcion.Text = producto.Descripcion.ToString();
+            txtExistencia.Text = producto.Existencia.ToString();
+            cbEstado.SelectedIndex = producto.estadoProducto.GetHashCode();
+        }
+
+        private void btnNuevo_Click(object sender, EventArgs e)
+        {
+            panel2.Enabled = true;
+            textCodigo.Text = "";
+            cbEstado.Enabled = false;
+        }
+
+        private void btnCancelar_Click(object sender, EventArgs e)
+        {
+            textCodigo.Text = "";
             txtDescripcion.Text = "";
             txtExistencia.Text = "";
             txtCSI.Text = "";
             txtPI.Text = "";
             txtCCI.Text = "";
             txtMG.Text = "";
-            txtPF.Text = "";
-        }
-
-        private void btnEditar_Click(object sender, EventArgs e)
-        {
-            //cbEstado.Enabled = true;
-            //if(MensajeDeValidacion())
-            //{
-            //    GuardarEditarProducto();
-            //}
-            //else
-                
-
-        }
-
-        public void GuardarEditarProducto()
-        {
-            var producto = Solucion.BuscarProducto(int.Parse(txtCodigo.Text));
-
-            producto.Codigo = int.Parse(txtCodigo.Text);
-            producto.Descripcion = txtDescripcion.Text;
-            producto.Existencia = int.Parse(txtExistencia.Text);
-            producto.CostoSinIva = float.Parse(txtCCI.Text);
-            producto.PorcentajeDeIVA = float.Parse(txtPI.Text);
-            producto.estadoProducto = (EstadoProducto)cbEstado.SelectedIndex;
-            producto.precioFinalDeVenta = float.Parse(txtPF.Text);
-
-            dwvGrilla.DataSource = null;
-            dwvGrilla.DataSource = Solucion.ObtenerProductos();
-        }
-        public bool MensajeDeValidacion()
-        {
-            bool pasoValidacion = true;
-            if (txtCodigo.Text == null && txtDescripcion.Text == null && txtExistencia.Text == null
-                && txtCCI.Text == null && txtPI.Text == null && txtMG.Text == null && txtPF.Text == null)
-            {
-                MessageBox.Show("Debe completar todos los campos para la edicion");
-                pasoValidacion = false;
-            }
-            return pasoValidacion;
-        }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            panel1.Visible = false;
+            txtPV.Text = "";
+            panel2.Enabled = false;
         }
     }
         

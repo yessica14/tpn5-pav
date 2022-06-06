@@ -6,7 +6,7 @@ using TPN5.Modelo;
 
 namespace TPN5.Repositorio
 {
-    public class Solucion
+    public class Repositorio
     {
         private static List<Producto> _productos = new List<Producto>();
         public static void CreacionDeProductos()
@@ -35,6 +35,14 @@ namespace TPN5.Repositorio
                 estadoProducto = EstadoProducto.Activo,
             });
 
+            _productos.Add(new Producto
+            {
+                Codigo = 4,
+                Descripcion = "arroz",
+                Existencia = 4,
+                estadoProducto = EstadoProducto.Activo,
+            });
+
         }
         public static List<Producto> ObtenerProductos()
         {
@@ -50,8 +58,5 @@ namespace TPN5.Repositorio
         {
             _productos.Add(producto);
         }
-            
-
-            
     }
 }
