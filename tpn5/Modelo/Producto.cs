@@ -9,36 +9,29 @@ namespace TPN5.Modelo
         public int Codigo { get; set; }
         public string Descripcion { get; set; }
         public int Existencia { get; set; }
-        public float CostoSinIva { get; set; }
-        public float PorcentajeDeIVA { get; set; }
+        public Double CostoSinIva { get; set; }
+        public Double PorcentajeDeIVA { get; set; }
 
-        public float margenDeGanancia;
+        public Double CostoConIVA { get; set; }
 
-        public float precioFinalDeVenta { get; set; }
-        public float CalcularCostoConIva()
+        public Double margenDeGanancia;
+
+        public Double precioFinalDeVenta { get; set; }
+        public Double CalcularCostoConIva()
         {
-            return CostoSinIva + CostoSinIva * PorcentajeDeIVA;
+            return CostoSinIva + CostoSinIva * (PorcentajeDeIVA / 100);
         }
         
         public EstadoProducto estadoProducto { get; set; }
 
-        public float CalcularMargenDeGanancia()
+        public Double CalcularMargenDeGanancia()
         {
-            return margenDeGanancia = (CalcularPrecioFinalDeVenta() - CalcularCostoConIva()) / CalcularCostoConIva();
+            return margenDeGanancia = ((precioFinalDeVenta - CostoConIVA) / CostoConIVA)*100;
         }
 
-        public float CalcularPrecioFinalDeVenta()
+        public Double CalcularPrecioFinalDeVenta()
         {
-            return precioFinalDeVenta = CalcularCostoConIva() + CalcularCostoConIva() * margenDeGanancia;
+            return precioFinalDeVenta = CostoConIVA + CostoConIVA * (margenDeGanancia/100);
         }
-
-        //public static float? calcularPrecioDeVentaOMargenDeGanancia(string cci, string? mg, string? pf)
-        //{
-        //    float costoconIVA = float.Parse(cci);
-        //    MargenDeGanancia = float.TryParse(mg, out _) ? float.Parse(mg) : (float?)null;
-        //    PrecioFinalDeVenta = float.TryParse(pf, out _) ? float.Parse(pf) : (float?)null;
-        //    float ?resultado = PrecioFinalDeVenta == null ? costoconIVA + costoconIVA * MargenDeGanancia : (precioFinalDeVenta - costoconIVA) / costoconIVA;
-        //    return resultado;
-        //}
     }
 }
